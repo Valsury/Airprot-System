@@ -6,36 +6,29 @@ services:
   - type: web
     name: airport-system-api
     runtime: node
+    plan: free
     buildCommand: cd server && npm install
     startCommand: cd server && npm start
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DATABASE_URL
-        fromDatabase:
-          name: airport-db
-          property: connectionString
+      # IMPORTANT: Create PostgreSQL database manually in Render Dashboard first,
+      # then add DATABASE_URL environment variable with the Internal Database URL
+      # - key: DATABASE_URL
+      #   value: postgresql://... (set this manually)
       - key: JWT_SECRET
         generateValue: true
       - key: FRONTEND_URL
         value: https://airport-system-app.onrender.com
-      - key: PORT
-        value: 10000
+      # PORT is automatically set by Render on free tier
 
   # PostgreSQL Database
-  - type: pg
-    name: airport-db
-    databaseName: airport_db
-    user: airport_user
+  # Note: PostgreSQL databases must be created manually in Render Dashboard
+  # After creating the database, add DATABASE_URL to backend environment variables
 
   # Frontend Service (Static Site)
-  - type: static
-    name: airport-system-app
-    buildCommand: cd client && npm install && npm run build
-    staticPublishPath: client/build
-    envVars:
-      - key: REACT_APP_API_URL
-        fromService:
-          name: airport-system-api
-          type: web
-          property: host
+  # Note: Static sites cannot be created via Blueprint in Render
+  # Create it manually: "New +" → "Static Site" in Render Dashboard
+  # Build Command: cd client && npm install && npm run build
+  # Publish Directory: client/build
+  # Environment Variable: REACT_APP_API_URL = https://airport-system-api.onrender.com

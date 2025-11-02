@@ -2,18 +2,24 @@
 
 Этот документ содержит подробные инструкции по развертыванию Airport Management System на Render.
 
-## Вариант 1: Автоматический деплой через Render Blueprint
+## Вариант 1: Полуавтоматический деплой через Render Blueprint
+
+**Важно:** Render Blueprint поддерживает только web services, поэтому через Blueprint создаётся только backend. PostgreSQL и Frontend нужно создать вручную.
 
 1. Загрузите код в Git репозиторий (GitHub, GitLab, Bitbucket)
-2. Войдите в Render Dashboard
-3. Нажмите "New +" → "Blueprint"
-4. Подключите ваш репозиторий
-5. Render автоматически создаст все необходимые сервисы на основе `render.yaml`
+2. **Сначала создайте PostgreSQL базу данных вручную** (см. Шаг 1 в Варианте 2)
+3. Войдите в Render Dashboard
+4. Нажмите "New +" → "Blueprint"
+5. Подключите ваш репозиторий
+6. Render автоматически создаст только **backend сервис** на основе `render.yaml`
+7. **После создания backend:**
+   - Добавьте `DATABASE_URL` в environment variables backend сервиса (скопируйте Internal Database URL из PostgreSQL сервиса)
+   - Создайте **Frontend Static Site вручную** (см. Шаг 3 Вариант А в Варианте 2)
 
 ## Вариант 2: Ручной деплой (рекомендуется для первого раза)
 
 ### Шаг 1: Создание PostgreSQL базы данных
-
+**7Xt0N>]2QXVO** - password db
 1. В Render Dashboard нажмите "New +" → "PostgreSQL"
 2. Настройки:
    - **Name:** airport-db
