@@ -67,9 +67,16 @@ initDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
   })
   .catch((err) => {
-    console.error('Failed to initialize database:', err);
+    console.error('\n❌ Failed to initialize database:', err.message);
+    console.error('\n📋 To fix this:');
+    console.error('1. Go to Render Dashboard');
+    console.error('2. Create a PostgreSQL database (New + → PostgreSQL)');
+    console.error('3. Copy the "Internal Database URL"');
+    console.error('4. Add it as DATABASE_URL environment variable in your web service');
+    console.error('5. Redeploy your service\n');
     process.exit(1);
   });
