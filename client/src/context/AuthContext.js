@@ -29,6 +29,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
+      console.log('Attempting login to:', `${API_URL}/auth/login`);
       const response = await axios.post(`${API_URL}/auth/login`, {
         username,
         password
@@ -41,9 +42,25 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       return { success: true };
     } catch (error) {
+      console.error('Login error:', error);
+      console.error('Error response:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      
+      let errorMessage = 'Login failed';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Invalid username or password';
+      } else if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        errorMessage = 'Cannot connect to server. Please check your connection or try again later.';
+      } else if (error.response?.status === 404) {
+        errorMessage = 'API endpoint not found. Please check REACT_APP_API_URL configuration.';
+      }
+      
       return {
         success: false,
-        message: error.response?.data?.message || 'Login failed'
+        message: errorMessage
       };
     }
   };
