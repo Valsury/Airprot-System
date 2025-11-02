@@ -38,6 +38,92 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Server is running' });
 });
 
+// Database status check (no auth required for troubleshooting)
+app.get('/api/db-status', async (req, res) => {
+  try {
+    const { pool } = require('./db/init');
+    
+    // Check if users table exists
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `);
+    
+    const tablesExist = tableCheck.rows[0].exists;
+    
+    if (!tablesExist) {
+      return res.json({ 
+        status: 'not_initialized',
+        message: 'Database tables do not exist. Server needs to initialize them.',
+        tablesExist: false,
+        adminExists: false
+      });
+    }
+    
+    // Check if admin user exists
+    const adminCheck = await pool.query('SELECT id, username, email, role FROM users WHERE username = $1', ['admin']);
+    const adminExists = adminCheck.rows.length > 0;
+    
+    res.json({
+      status: 'ok',
+      message: 'Database is initialized',
+      tablesExist: true,
+      adminExists: adminExists,
+      adminUser: adminExists ? adminCheck.rows[0] : null
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: 'error',
+      message: error.message,
+      tablesExist: false,
+      adminExists: false
+    });
+  }
+});
+
+// Create admin user manually (no auth required for initial setup)
+app.post('/api/create-admin', async (req, res) => {
+  try {
+    const { pool } = require('./db/init');
+    const bcrypt = require('bcryptjs');
+    
+    // Check if admin already exists
+    const existingAdmin = await pool.query('SELECT id FROM users WHERE username = $1', ['admin']);
+    
+    if (existingAdmin.rows.length > 0) {
+      return res.status(400).json({ 
+        message: 'Admin user already exists',
+        username: 'admin'
+      });
+    }
+    
+    // Create admin user
+    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const result = await pool.query(
+      'INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, username, email, role',
+      ['admin', 'admin@airport.com', hashedPassword, 'admin']
+    );
+    
+    res.json({
+      message: 'Admin user created successfully',
+      user: result.rows[0],
+      credentials: {
+        username: 'admin',
+        password: 'admin123'
+      }
+    });
+  } catch (error) {
+    console.error('Create admin error:', error);
+    res.status(500).json({ 
+      message: 'Error creating admin user',
+      error: error.message
+    });
+  }
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', authenticateToken, clientsRoutes);
@@ -67,16 +153,9 @@ initDatabase()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
   })
   .catch((err) => {
-    console.error('\n❌ Failed to initialize database:', err.message);
-    console.error('\n📋 To fix this:');
-    console.error('1. Go to Render Dashboard');
-    console.error('2. Create a PostgreSQL database (New + → PostgreSQL)');
-    console.error('3. Copy the "Internal Database URL"');
-    console.error('4. Add it as DATABASE_URL environment variable in your web service');
-    console.error('5. Redeploy your service\n');
+    console.error('Failed to initialize database:', err);
     process.exit(1);
   });

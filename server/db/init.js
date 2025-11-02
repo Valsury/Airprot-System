@@ -1,13 +1,6 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-// Check if DATABASE_URL is provided
-if (!process.env.DATABASE_URL) {
-  console.error('ERROR: DATABASE_URL environment variable is not set!');
-  console.error('Please create a PostgreSQL database in Render Dashboard and add DATABASE_URL to your environment variables.');
-  throw new Error('DATABASE_URL is required. Please configure it in Render Dashboard → Environment Variables.');
-}
-
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
@@ -16,9 +9,6 @@ const pool = new Pool({
 // Initialize database tables
 async function initDatabase() {
   try {
-    // Test connection first
-    await pool.query('SELECT NOW()');
-    console.log('Database connection established');
     // Create users table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
