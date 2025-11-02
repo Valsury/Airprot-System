@@ -9,9 +9,10 @@ router.get('/',
   [
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-    query('flight_number').optional().isString(),
-    query('date').optional().isISO8601(),
-    query('search').optional().isString()
+    query('flight_number').optional().isString().trim(),
+    query('departure_date').optional().isISO8601(),
+    query('arrival_date').optional().isISO8601(),
+    query('search').optional().isString().trim()
   ],
   async (req, res) => {
     try {
@@ -25,9 +26,10 @@ router.get('/',
       const page = req.query.page || 1;
       const limit = req.query.limit || 20;
       const offset = (page - 1) * limit;
-      const flightNumber = req.query.flight_number;
-      const date = req.query.date;
-      const search = req.query.search || '';
+      const flightNumber = req.query.flight_number?.trim();
+      const departureDate = req.query.departure_date;
+      const arrivalDate = req.query.arrival_date;
+      const search = req.query.search?.trim();
 
       let queryText = `
         SELECT t.*, 
@@ -39,22 +41,27 @@ router.get('/',
       let queryParams = [];
       let paramCount = 0;
 
-      if (flightNumber) {
+      if (flightNumber && flightNumber.length > 0) {
         paramCount++;
         conditions.push(`t.flight_number ILIKE $${paramCount}`);
         queryParams.push(`%${flightNumber}%`);
       }
 
-      if (date) {
+      if (departureDate) {
         paramCount++;
-        // Filter by date (matching any date in the ticket's date range)
-        conditions.push(`(DATE(t.departure_date) = $${paramCount} OR DATE(t.arrival_date) = $${paramCount})`);
-        queryParams.push(date);
+        conditions.push(`DATE(t.departure_date) = $${paramCount}`);
+        queryParams.push(departureDate);
       }
 
-      if (search) {
+      if (arrivalDate) {
         paramCount++;
-        conditions.push(`(t.flight_number ILIKE $${paramCount} OR t.departure_airport ILIKE $${paramCount} OR t.arrival_airport ILIKE $${paramCount})`);
+        conditions.push(`DATE(t.arrival_date) = $${paramCount}`);
+        queryParams.push(arrivalDate);
+      }
+
+      if (search && search.length > 0) {
+        paramCount++;
+        conditions.push(`(t.departure_airport ILIKE $${paramCount} OR t.arrival_airport ILIKE $${paramCount})`);
         queryParams.push(`%${search}%`);
       }
 
@@ -68,12 +75,37 @@ router.get('/',
 
       const result = await pool.query(queryText, queryParams);
 
-      // Get total count
+      // Get total count with same conditions (without limit and offset)
       let countQuery = 'SELECT COUNT(*) FROM tickets t';
+      let countParams = [];
+      let countParamNum = 0;
+      
       if (conditions.length > 0) {
-        countQuery += ' WHERE ' + conditions.join(' AND ');
+        // Rebuild conditions with correct parameter numbers for count query
+        let countConditions = [];
+        if (flightNumber && flightNumber.length > 0) {
+          countParamNum++;
+          countConditions.push(`t.flight_number ILIKE $${countParamNum}`);
+          countParams.push(`%${flightNumber}%`);
+        }
+        if (departureDate) {
+          countParamNum++;
+          countConditions.push(`DATE(t.departure_date) = $${countParamNum}`);
+          countParams.push(departureDate);
+        }
+        if (arrivalDate) {
+          countParamNum++;
+          countConditions.push(`DATE(t.arrival_date) = $${countParamNum}`);
+          countParams.push(arrivalDate);
+        }
+        if (search && search.length > 0) {
+          countParamNum++;
+          countConditions.push(`(t.departure_airport ILIKE $${countParamNum} OR t.arrival_airport ILIKE $${countParamNum})`);
+          countParams.push(`%${search}%`);
+        }
+        countQuery += ' WHERE ' + countConditions.join(' AND ');
       }
-      const countResult = await pool.query(countQuery, queryParams.slice(0, -2));
+      const countResult = await pool.query(countQuery, countParams);
 
       res.json({
         tickets: result.rows,

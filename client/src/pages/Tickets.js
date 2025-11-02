@@ -16,21 +16,33 @@ const Tickets = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [flightFilter, setFlightFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
+  const [departureDateFilter, setDepartureDateFilter] = useState('');
+  const [arrivalDateFilter, setArrivalDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
 
   useEffect(() => {
     fetchTickets();
-  }, [page, search, flightFilter, dateFilter]);
+  }, [page, search, flightFilter, departureDateFilter, arrivalDateFilter]);
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const params = { page, limit: 20 };
-      if (search) params.search = search;
-      if (flightFilter) params.flight_number = flightFilter;
-      if (dateFilter) params.date = dateFilter;
+      
+      // Only add params if they have values (not empty strings)
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      if (flightFilter && flightFilter.trim()) {
+        params.flight_number = flightFilter.trim();
+      }
+      if (departureDateFilter) {
+        params.departure_date = departureDateFilter;
+      }
+      if (arrivalDateFilter) {
+        params.arrival_date = arrivalDateFilter;
+      }
 
       const response = await axios.get(`${API_URL}/tickets`, { params });
       setTickets(response.data.tickets);
@@ -84,8 +96,8 @@ const Tickets = () => {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1 max-w-sm">
+          <div className="flex flex-col sm:flex-row gap-4 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Поиск по аэропортам..."
@@ -97,7 +109,7 @@ const Tickets = () => {
                 className="pl-10"
               />
             </div>
-            <div className="relative max-w-xs">
+            <div className="relative min-w-[180px]">
               <Input
                 placeholder="Фильтр по номеру рейса"
                 value={flightFilter}
@@ -107,13 +119,24 @@ const Tickets = () => {
                 }}
               />
             </div>
-            <div className="relative max-w-xs">
+            <div className="relative min-w-[180px]">
               <Input
                 type="date"
-                placeholder="Фильтр по дате"
-                value={dateFilter}
+                placeholder="Дата вылета"
+                value={departureDateFilter}
                 onChange={(e) => {
-                  setDateFilter(e.target.value);
+                  setDepartureDateFilter(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="relative min-w-[180px]">
+              <Input
+                type="date"
+                placeholder="Дата прилета"
+                value={arrivalDateFilter}
+                onChange={(e) => {
+                  setArrivalDateFilter(e.target.value);
                   setPage(1);
                 }}
               />
