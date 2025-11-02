@@ -29,8 +29,11 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      console.log('Attempting login to:', `${API_URL}/auth/login`);
-      const response = await axios.post(`${API_URL}/auth/login`, {
+      const loginUrl = `${API_URL}/auth/login`;
+      console.log('🔐 Attempting login to:', loginUrl);
+      console.log('📊 API_URL:', API_URL);
+      console.log('📊 REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+      const response = await axios.post(loginUrl, {
         username,
         password
       });
