@@ -14,6 +14,9 @@ const { initDatabase } = require('./db/init');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust proxy for Render (important for rate limiting and IP detection)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet());
 
@@ -129,14 +132,22 @@ app.use('/api/auth', authRoutes);
 app.use('/api/clients', authenticateToken, clientsRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
 
-// Serve static files from React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/build')));
+// Only serve static files if deploying as monolith (when FRONTEND_URL is not set)
+// If frontend is separate static site, skip this
+if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
+  const staticPath = path.join(__dirname, '../client/build');
+  const indexPath = path.join(staticPath, 'index.html');
   
-  // All other routes return the React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
-  });
+  // Check if static files exist before serving them
+  const fs = require('fs');
+  if (fs.existsSync(staticPath) && fs.existsSync(indexPath)) {
+    app.use(express.static(staticPath));
+    
+    // All other routes return the React app
+    app.get('*', (req, res) => {
+      res.sendFile(indexPath);
+    });
+  }
 }
 
 // Error handling middleware
