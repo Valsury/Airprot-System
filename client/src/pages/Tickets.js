@@ -4,7 +4,12 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { API_URL } from '../config/api';
-import './Tickets.css';
+import { Card, CardContent, CardHeader } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Badge } from '../components/ui/badge';
+import { Plus, Search, Edit, Trash2, Loader2, Ticket, Plane } from 'lucide-react';
 
 const Tickets = () => {
   const [tickets, setTickets] = useState([]);
@@ -29,7 +34,7 @@ const Tickets = () => {
       setTickets(response.data.tickets);
       setPagination(response.data.pagination);
     } catch (error) {
-      toast.error('Failed to fetch tickets');
+      toast.error('Не удалось загрузить билеты');
       console.error(error);
     } finally {
       setLoading(false);
@@ -37,162 +42,204 @@ const Tickets = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this ticket?')) return;
+    if (!window.confirm('Вы уверены, что хотите удалить этот билет?')) return;
 
     try {
       await axios.delete(`${API_URL}/tickets/${id}`);
-      toast.success('Ticket deleted successfully');
+      toast.success('Билет успешно удален');
       fetchTickets();
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete ticket');
+      toast.error(error.response?.data?.message || 'Не удалось удалить билет');
     }
   };
 
   const getStatusBadge = (status) => {
-    const statuses = {
-      active: 'badge-success',
-      cancelled: 'badge-danger',
-      used: 'badge-info'
+    const statusMap = {
+      active: { variant: 'success', label: 'Активный' },
+      cancelled: { variant: 'destructive', label: 'Отменен' },
+      used: { variant: 'info', label: 'Использован' }
     };
-    return statuses[status] || 'badge-secondary';
+    const statusInfo = statusMap[status] || { variant: 'default', label: status };
+    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
   return (
-    <div className="tickets-page">
-      <div className="page-header">
-        <h1>Tickets</h1>
-        <Link to="/tickets/new" className="btn btn-primary">
-          + Create New Ticket
-        </Link>
-      </div>
-
-      <div className="filters">
-        <input
-          type="text"
-          className="input"
-          placeholder="Search by flight number, airports..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          style={{ maxWidth: '400px' }}
-        />
-        <input
-          type="number"
-          className="input"
-          placeholder="Filter by Client ID (optional)"
-          value={clientFilter}
-          onChange={(e) => {
-            setClientFilter(e.target.value);
-            setPage(1);
-          }}
-          style={{ maxWidth: '200px' }}
-        />
-      </div>
-
-      {loading ? (
-        <div className="loading">Loading...</div>
-      ) : tickets.length === 0 ? (
-        <div className="empty-state">
-          <p>No tickets found</p>
-          <Link to="/tickets/new" className="btn btn-primary">
-            Create First Ticket
-          </Link>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight">Билеты</h1>
+          <p className="text-muted-foreground mt-2">
+            Управление авиабилетами
+          </p>
         </div>
-      ) : (
-        <>
-          <div className="table-container">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Flight</th>
-                  <th>Client</th>
-                  <th>Route</th>
-                  <th>Departure</th>
-                  <th>Arrival</th>
-                  <th>Seat</th>
-                  <th>Class</th>
-                  <th>Price</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tickets.map((ticket) => (
-                  <tr key={ticket.id}>
-                    <td>
-                      <strong>{ticket.flight_number}</strong>
-                    </td>
-                    <td>
-                      {ticket.first_name} {ticket.last_name}
-                      <br />
-                      <small style={{ color: '#6b7280' }}>
-                        {ticket.passport_number}
-                      </small>
-                    </td>
-                    <td>
-                      {ticket.departure_airport} → {ticket.arrival_airport}
-                    </td>
-                    <td>
-                      {format(new Date(ticket.departure_date), 'dd.MM.yyyy HH:mm')}
-                    </td>
-                    <td>
-                      {format(new Date(ticket.arrival_date), 'dd.MM.yyyy HH:mm')}
-                    </td>
-                    <td>{ticket.seat_number || '-'}</td>
-                    <td>{ticket.ticket_class}</td>
-                    <td>${parseFloat(ticket.price).toFixed(2)}</td>
-                    <td>
-                      <span className={`badge ${getStatusBadge(ticket.status)}`}>
-                        {ticket.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <Link
-                          to={`/tickets/${ticket.id}/edit`}
-                          className="btn btn-secondary btn-sm"
-                        >
-                          Edit
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(ticket.id)}
-                          className="btn btn-danger btn-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Button asChild>
+          <Link to="/tickets/new">
+            <Plus className="h-4 w-4 mr-2" />
+            Создать билет
+          </Link>
+        </Button>
+      </div>
 
-          {pagination.totalPages > 1 && (
-            <div className="pagination">
-              <button
-                className="btn btn-secondary"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                Previous
-              </button>
-              <span>
-                Page {page} of {pagination.totalPages} ({pagination.total} total)
-              </span>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
-                disabled={page === pagination.totalPages}
-              >
-                Next
-              </button>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по номеру рейса, аэропортам..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="pl-10"
+              />
             </div>
+            <div className="relative max-w-xs">
+              <Input
+                type="number"
+                placeholder="Фильтр по ID клиента (опционально)"
+                value={clientFilter}
+                onChange={(e) => {
+                  setClientFilter(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : tickets.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Ticket className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Билеты не найдены</h3>
+              <p className="text-muted-foreground mb-4">
+                {search ? 'Попробуйте изменить параметры поиска' : 'Начните с создания первого билета'}
+              </p>
+              <Button asChild>
+                <Link to="/tickets/new">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Создать первый билет
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Рейс</TableHead>
+                      <TableHead>Клиент</TableHead>
+                      <TableHead>Маршрут</TableHead>
+                      <TableHead>Вылет</TableHead>
+                      <TableHead>Прилет</TableHead>
+                      <TableHead>Место</TableHead>
+                      <TableHead>Класс</TableHead>
+                      <TableHead>Цена</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead className="text-right">Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tickets.map((ticket) => (
+                      <TableRow key={ticket.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            <Plane className="h-4 w-4 text-primary" />
+                            {ticket.flight_number}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <div className="font-medium">
+                              {ticket.first_name} {ticket.last_name}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {ticket.passport_number}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-medium">{ticket.departure_airport}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="text-sm font-medium">{ticket.arrival_airport}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(ticket.departure_date), 'dd.MM.yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {format(new Date(ticket.arrival_date), 'dd.MM.yyyy HH:mm')}
+                        </TableCell>
+                        <TableCell>{ticket.seat_number || <span className="text-muted-foreground">-</span>}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{ticket.ticket_class}</Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {parseFloat(ticket.price).toFixed(2)} ₽
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(ticket.status)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" asChild>
+                              <Link to={`/tickets/${ticket.id}/edit`}>
+                                <Edit className="h-4 w-4 mr-1" />
+                                Изменить
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(ticket.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Удалить
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Страница {page} из {pagination.totalPages} (всего: {pagination.total})
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.max(1, p - 1))}
+                      disabled={page === 1}
+                    >
+                      Назад
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                      disabled={page === pagination.totalPages}
+                    >
+                      Вперед
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
-        </>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

@@ -3,7 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { API_URL } from '../config/api';
-import './TicketForm.css';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Select } from '../components/ui/select';
+import { Loader2, ArrowLeft, Ticket, Save } from 'lucide-react';
 
 const TicketForm = () => {
   const { id } = useParams();
@@ -40,7 +45,7 @@ const TicketForm = () => {
       const response = await axios.get(`${API_URL}/clients?limit=1000`);
       setClients(response.data.clients);
     } catch (error) {
-      toast.error('Failed to load clients');
+      toast.error('Не удалось загрузить клиентов');
     }
   };
 
@@ -65,7 +70,7 @@ const TicketForm = () => {
         status: ticket.status || 'active'
       });
     } catch (error) {
-      toast.error('Failed to load ticket data');
+      toast.error('Не удалось загрузить данные билета');
       navigate('/tickets');
     } finally {
       setLoadingData(false);
@@ -94,16 +99,16 @@ const TicketForm = () => {
 
       if (isEdit) {
         await axios.put(`${API_URL}/tickets/${id}`, submitData);
-        toast.success('Ticket updated successfully');
+        toast.success('Билет успешно обновлен');
       } else {
         await axios.post(`${API_URL}/tickets`, submitData);
-        toast.success('Ticket created successfully');
+        toast.success('Билет успешно создан');
       }
       navigate('/tickets');
     } catch (error) {
       const message = error.response?.data?.message || 
                      error.response?.data?.errors?.[0]?.msg ||
-                     'Failed to save ticket';
+                     'Не удалось сохранить билет';
       toast.error(message);
     } finally {
       setLoading(false);
@@ -111,177 +116,217 @@ const TicketForm = () => {
   };
 
   if (loadingData) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
-    <div className="form-page">
-      <div className="form-header">
-        <h1>{isEdit ? 'Edit Ticket' : 'Create New Ticket'}</h1>
-        <button onClick={() => navigate('/tickets')} className="btn btn-secondary">
-          Cancel
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/tickets')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {isEdit ? 'Редактировать билет' : 'Создать новый билет'}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {isEdit ? 'Обновите информацию о билете' : 'Выпустите новый авиабилет для клиента'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="form-card">
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label className="label">Client *</label>
-            <select
-              name="client_id"
-              className="input"
-              value={formData.client_id}
-              onChange={handleChange}
-              required
-              disabled={isEdit}
-            >
-              <option value="">Select a client</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.first_name} {client.last_name} - {client.passport_number}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label className="label">Flight Number *</label>
-            <input
-              type="text"
-              name="flight_number"
-              className="input"
-              value={formData.flight_number}
-              onChange={handleChange}
-              required
-              placeholder="e.g., AA1234"
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">Departure Airport *</label>
-              <input
-                type="text"
-                name="departure_airport"
-                className="input"
-                value={formData.departure_airport}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Ticket className="h-5 w-5" />
+            Информация о билете
+          </CardTitle>
+          <CardDescription>
+            Заполните форму для {isEdit ? 'обновления' : 'создания'} билета
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="client_id">Клиент *</Label>
+              <Select
+                id="client_id"
+                name="client_id"
+                value={formData.client_id}
                 onChange={handleChange}
                 required
-                placeholder="e.g., JFK"
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Arrival Airport *</label>
-              <input
-                type="text"
-                name="arrival_airport"
-                className="input"
-                value={formData.arrival_airport}
-                onChange={handleChange}
-                required
-                placeholder="e.g., LAX"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">Departure Date & Time *</label>
-              <input
-                type="datetime-local"
-                name="departure_date"
-                className="input"
-                value={formData.departure_date}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Arrival Date & Time *</label>
-              <input
-                type="datetime-local"
-                name="arrival_date"
-                className="input"
-                value={formData.arrival_date}
-                onChange={handleChange}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">Seat Number</label>
-              <input
-                type="text"
-                name="seat_number"
-                className="input"
-                value={formData.seat_number}
-                onChange={handleChange}
-                placeholder="e.g., 12A"
-              />
-            </div>
-            <div className="form-group">
-              <label className="label">Ticket Class *</label>
-              <select
-                name="ticket_class"
-                className="input"
-                value={formData.ticket_class}
-                onChange={handleChange}
-                required
+                disabled={isEdit || loading}
               >
-                <option value="economy">Economy</option>
-                <option value="business">Business</option>
-                <option value="first">First Class</option>
-              </select>
+                <option value="">Выберите клиента</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.first_name} {client.last_name} - {client.passport_number}
+                  </option>
+                ))}
+              </Select>
             </div>
-          </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">Price (USD) *</label>
-              <input
-                type="number"
-                name="price"
-                className="input"
-                value={formData.price}
+            <div className="space-y-2">
+              <Label htmlFor="flight_number">Номер рейса *</Label>
+              <Input
+                id="flight_number"
+                name="flight_number"
+                placeholder="Например: SU1234"
+                value={formData.flight_number}
                 onChange={handleChange}
                 required
-                min="0"
-                step="0.01"
-                placeholder="0.00"
+                disabled={loading}
               />
             </div>
-            <div className="form-group">
-              <label className="label">Status *</label>
-              <select
-                name="status"
-                className="input"
-                value={formData.status}
-                onChange={handleChange}
-                required
-              >
-                <option value="active">Active</option>
-                <option value="cancelled">Cancelled</option>
-                <option value="used">Used</option>
-              </select>
-            </div>
-          </div>
 
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Saving...' : isEdit ? 'Update Ticket' : 'Create Ticket'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/tickets')}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="departure_airport">Аэропорт вылета *</Label>
+                <Input
+                  id="departure_airport"
+                  name="departure_airport"
+                  placeholder="Например: Шереметьево (Москва)"
+                  value={formData.departure_airport}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="arrival_airport">Аэропорт прилета *</Label>
+                <Input
+                  id="arrival_airport"
+                  name="arrival_airport"
+                  placeholder="Например: Пулково (Санкт-Петербург)"
+                  value={formData.arrival_airport}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="departure_date">Дата и время вылета *</Label>
+                <Input
+                  id="departure_date"
+                  name="departure_date"
+                  type="datetime-local"
+                  value={formData.departure_date}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="arrival_date">Дата и время прилета *</Label>
+                <Input
+                  id="arrival_date"
+                  name="arrival_date"
+                  type="datetime-local"
+                  value={formData.arrival_date}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="seat_number">Номер места</Label>
+                <Input
+                  id="seat_number"
+                  name="seat_number"
+                  placeholder="Например: 12A"
+                  value={formData.seat_number}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticket_class">Класс обслуживания *</Label>
+                <Select
+                  id="ticket_class"
+                  name="ticket_class"
+                  value={formData.ticket_class}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value="economy">Эконом</option>
+                  <option value="business">Бизнес</option>
+                  <option value="first">Первый класс</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="price">Цена (₽) *</Label>
+                <Input
+                  id="price"
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={formData.price}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Статус *</Label>
+                <Select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                >
+                  <option value="active">Активный</option>
+                  <option value="cancelled">Отменен</option>
+                  <option value="used">Использован</option>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/tickets')}
+                disabled={loading}
+              >
+                Отмена
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isEdit ? 'Сохранить изменения' : 'Создать билет'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

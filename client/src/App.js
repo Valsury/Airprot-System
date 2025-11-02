@@ -10,7 +10,6 @@ import ClientForm from './pages/ClientForm';
 import Tickets from './pages/Tickets';
 import TicketForm from './pages/TicketForm';
 import Layout from './components/Layout';
-import './App.css';
 
 function App() {
   return (

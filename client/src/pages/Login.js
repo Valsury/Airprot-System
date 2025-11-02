@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import './Login.css';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Button } from '../components/ui/button';
+import { Plane } from 'lucide-react';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -18,52 +22,71 @@ const Login = () => {
     const result = await login(username, password);
 
     if (result.success) {
-      toast.success('Login successful!');
+      toast.success('Вход выполнен успешно!');
       navigate('/');
     } else {
-      toast.error(result.message || 'Login failed');
+      toast.error(result.message || 'Ошибка входа');
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="login-container">
-      <div className="login-card">
-        <div className="login-header">
-          <h1>✈️ Airport System</h1>
-          <p>Sign in to your account</p>
-        </div>
-        <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label className="label">Username</label>
-            <input
-              type="text"
-              className="input"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoFocus
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Plane className="h-8 w-8 text-primary" />
+            </div>
           </div>
-          <div className="form-group">
-            <label className="label">Password</label>
-            <input
-              type="password"
-              className="input"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <CardTitle className="text-3xl font-bold">Система аэропорта</CardTitle>
+          <CardDescription>
+            Войдите в свой аккаунт для продолжения
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="username">Имя пользователя</Label>
+              <Input
+                id="username"
+                type="text"
+                placeholder="Введите имя пользователя"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                autoFocus
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Введите пароль"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+              />
+            </div>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+              size="lg"
+            >
+              {loading ? 'Вход...' : 'Войти'}
+            </Button>
+          </form>
+          <div className="mt-6 text-center text-sm text-muted-foreground border-t pt-4">
+            <p>Учетные данные по умолчанию:</p>
+            <p className="font-semibold mt-1">admin / admin123</p>
           </div>
-          <button type="submit" className="btn btn-primary login-btn" disabled={loading}>
-            {loading ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-        <div className="login-info">
-          <p>Default credentials: <strong>admin / admin123</strong></p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

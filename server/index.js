@@ -8,6 +8,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/auth');
 const clientsRoutes = require('./routes/clients');
 const ticketsRoutes = require('./routes/tickets');
+const mockDataRoutes = require('./routes/mock-data');
 const { authenticateToken } = require('./middleware/auth');
 const { initDatabase } = require('./db/init');
 
@@ -131,6 +132,7 @@ app.post('/api/create-admin', async (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', authenticateToken, clientsRoutes);
 app.use('/api/tickets', authenticateToken, ticketsRoutes);
+app.use('/api/mock-data', mockDataRoutes); // No auth required for convenience
 
 // Only serve static files if deploying as monolith (when FRONTEND_URL is not set)
 // If frontend is separate static site, skip this

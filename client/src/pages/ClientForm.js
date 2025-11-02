@@ -3,7 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { API_URL } from '../config/api';
-import './ClientForm.css';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Loader2, ArrowLeft, UserPlus, Save } from 'lucide-react';
 
 const ClientForm = () => {
   const { id } = useParams();
@@ -42,7 +46,7 @@ const ClientForm = () => {
           : ''
       });
     } catch (error) {
-      toast.error('Failed to load client data');
+      toast.error('Не удалось загрузить данные клиента');
       navigate('/clients');
     } finally {
       setLoadingData(false);
@@ -63,16 +67,16 @@ const ClientForm = () => {
     try {
       if (isEdit) {
         await axios.put(`${API_URL}/clients/${id}`, formData);
-        toast.success('Client updated successfully');
+        toast.success('Клиент успешно обновлен');
       } else {
         await axios.post(`${API_URL}/clients`, formData);
-        toast.success('Client created successfully');
+        toast.success('Клиент успешно создан');
       }
       navigate('/clients');
     } catch (error) {
       const message = error.response?.data?.message || 
                      error.response?.data?.errors?.[0]?.msg ||
-                     'Failed to save client';
+                     'Не удалось сохранить клиента';
       toast.error(message);
     } finally {
       setLoading(false);
@@ -80,105 +84,148 @@ const ClientForm = () => {
   };
 
   if (loadingData) {
-    return <div className="loading">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
-    <div className="form-page">
-      <div className="form-header">
-        <h1>{isEdit ? 'Edit Client' : 'Add New Client'}</h1>
-        <button onClick={() => navigate('/clients')} className="btn btn-secondary">
-          Cancel
-        </button>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/clients')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">
+              {isEdit ? 'Редактировать клиента' : 'Добавить нового клиента'}
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {isEdit ? 'Обновите информацию о клиенте' : 'Зарегистрируйте нового клиента в системе'}
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="form-card">
-        <form onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">First Name *</label>
-              <input
-                type="text"
-                name="first_name"
-                className="input"
-                value={formData.first_name}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Информация о клиенте
+          </CardTitle>
+          <CardDescription>
+            Заполните форму для {isEdit ? 'обновления' : 'регистрации'} клиента
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">Имя *</Label>
+                <Input
+                  id="first_name"
+                  name="first_name"
+                  placeholder="Введите имя"
+                  value={formData.first_name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Фамилия *</Label>
+                <Input
+                  id="last_name"
+                  name="last_name"
+                  placeholder="Введите фамилию"
+                  value={formData.last_name}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="passport_number">Номер паспорта *</Label>
+              <Input
+                id="passport_number"
+                name="passport_number"
+                placeholder="Введите номер паспорта"
+                value={formData.passport_number}
                 onChange={handleChange}
                 required
+                disabled={loading}
               />
             </div>
-            <div className="form-group">
-              <label className="label">Last Name *</label>
-              <input
-                type="text"
-                name="last_name"
-                className="input"
-                value={formData.last_name}
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="email@example.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Телефон</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+7 (XXX) XXX-XX-XX"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Дата рождения</Label>
+              <Input
+                id="date_of_birth"
+                name="date_of_birth"
+                type="date"
+                value={formData.date_of_birth}
                 onChange={handleChange}
-                required
+                disabled={loading}
               />
             </div>
-          </div>
 
-          <div className="form-group">
-            <label className="label">Passport Number *</label>
-            <input
-              type="text"
-              name="passport_number"
-              className="input"
-              value={formData.passport_number}
-              onChange={handleChange}
-              required
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="label">Email</label>
-              <input
-                type="email"
-                name="email"
-                className="input"
-                value={formData.email}
-                onChange={handleChange}
-              />
+            <div className="flex justify-end gap-4 pt-4 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => navigate('/clients')}
+                disabled={loading}
+              >
+                Отмена
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Сохранение...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    {isEdit ? 'Сохранить изменения' : 'Создать клиента'}
+                  </>
+                )}
+              </Button>
             </div>
-            <div className="form-group">
-              <label className="label">Phone</label>
-              <input
-                type="tel"
-                name="phone"
-                className="input"
-                value={formData.phone}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="label">Date of Birth</label>
-            <input
-              type="date"
-              name="date_of_birth"
-              className="input"
-              value={formData.date_of_birth}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Saving...' : isEdit ? 'Update Client' : 'Create Client'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/clients')}
-              className="btn btn-secondary"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };
