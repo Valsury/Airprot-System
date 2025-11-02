@@ -9,15 +9,24 @@ router.get('/',
   [
     query('page').optional().isInt({ min: 1 }).toInt(),
     query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
-    query('client_id').optional().isInt().toInt(),
+    query('flight_number').optional().isString(),
+    query('date').optional().isISO8601(),
     query('search').optional().isString()
   ],
   async (req, res) => {
     try {
+      // First, automatically update status of tickets where arrival_date has passed
+      await pool.query(
+        `UPDATE tickets 
+         SET status = 'used', updated_at = CURRENT_TIMESTAMP 
+         WHERE status = 'active' AND arrival_date < CURRENT_TIMESTAMP`
+      );
+
       const page = req.query.page || 1;
       const limit = req.query.limit || 20;
       const offset = (page - 1) * limit;
-      const clientId = req.query.client_id;
+      const flightNumber = req.query.flight_number;
+      const date = req.query.date;
       const search = req.query.search || '';
 
       let queryText = `
@@ -30,10 +39,17 @@ router.get('/',
       let queryParams = [];
       let paramCount = 0;
 
-      if (clientId) {
+      if (flightNumber) {
         paramCount++;
-        conditions.push(`t.client_id = $${paramCount}`);
-        queryParams.push(clientId);
+        conditions.push(`t.flight_number ILIKE $${paramCount}`);
+        queryParams.push(`%${flightNumber}%`);
+      }
+
+      if (date) {
+        paramCount++;
+        // Filter by date (matching any date in the ticket's date range)
+        conditions.push(`(DATE(t.departure_date) = $${paramCount} OR DATE(t.arrival_date) = $${paramCount})`);
+        queryParams.push(date);
       }
 
       if (search) {

@@ -15,20 +15,22 @@ const Tickets = () => {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [clientFilter, setClientFilter] = useState('');
+  const [flightFilter, setFlightFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ total: 0, totalPages: 0 });
 
   useEffect(() => {
     fetchTickets();
-  }, [page, search, clientFilter]);
+  }, [page, search, flightFilter, dateFilter]);
 
   const fetchTickets = async () => {
     try {
       setLoading(true);
       const params = { page, limit: 20 };
       if (search) params.search = search;
-      if (clientFilter) params.client_id = clientFilter;
+      if (flightFilter) params.flight_number = flightFilter;
+      if (dateFilter) params.date = dateFilter;
 
       const response = await axios.get(`${API_URL}/tickets`, { params });
       setTickets(response.data.tickets);
@@ -86,7 +88,7 @@ const Tickets = () => {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Поиск по номеру рейса, аэропортам..."
+                placeholder="Поиск по аэропортам..."
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
@@ -97,11 +99,21 @@ const Tickets = () => {
             </div>
             <div className="relative max-w-xs">
               <Input
-                type="number"
-                placeholder="Фильтр по ID клиента (опционально)"
-                value={clientFilter}
+                placeholder="Фильтр по номеру рейса"
+                value={flightFilter}
                 onChange={(e) => {
-                  setClientFilter(e.target.value);
+                  setFlightFilter(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            <div className="relative max-w-xs">
+              <Input
+                type="date"
+                placeholder="Фильтр по дате"
+                value={dateFilter}
+                onChange={(e) => {
+                  setDateFilter(e.target.value);
                   setPage(1);
                 }}
               />
