@@ -23,15 +23,14 @@ services:
         value: 10000
 
   # PostgreSQL Database
-  - type: pspg
+  - type: pg
     name: airport-db
     databaseName: airport_db
     user: airport_user
 
   # Frontend Service (Static Site)
-  - type: web
+  - type: static
     name: airport-system-app
-    runtime: node
     buildCommand: cd client && npm install && npm run build
     staticPublishPath: client/build
     envVars:
